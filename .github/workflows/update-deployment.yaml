@@ -1,0 +1,43 @@
+name: Update Deployment
+
+on:
+  # Called from the release workflow in example-application
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Image tag to deploy"
+        required: true
+      image:
+        description: "Base image URL (no tag)"
+        required: true
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write           # needed for commit
+      pull-requests: write      # needed for PR
+    steps:
+      # 1. Checkout this repo
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # 2. Update the deployment YAML with the new tag
+      - name: Update image tag in manifest
+        run: |
+          sed -i \
+            "s|image: .*|image: ${{ github.event.inputs.image }}:${{ github.event.inputs.tag_name }}|" \
+            applications/example-application/deployment.yaml
+
+      # 3. Commit the change and open a PR
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          commit-message: "Update to ${{ github.event.inputs.tag_name }}"
+          branch: update-${{ github.event.inputs.tag_name }}
+          title: "Deploy version ${{ github.event.inputs.tag_name }}"
+          body: |
+            Automated update:
+            * Image: **${{ github.event.inputs.image }}:${{ github.event.inputs.tag_name }}**
+            * Workflow triggered by example-application release workflow.
