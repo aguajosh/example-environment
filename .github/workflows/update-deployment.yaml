@@ -4,34 +4,35 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "Image tag to deploy"
+        description: "Image tag to deploy (e.g. v2.0.0)"
         required: true
       image:
-        description: "Base image URL (no tag)"
+        description: "Base image URL without tag"
         required: true
 
 jobs:
   update-manifest:
     runs-on: ubuntu-latest
     permissions:
-      contents: write           # allow commit
-      pull-requests: write      # allow PR
+      contents: write       # allow commit
+      pull-requests: write  # allow PR
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v2
 
-      - name: Update image tag in manifest
+      - name: Bump image tag in manifest
         run: |
           sed -i \
-            "s|image: .*|image: ${{ github.event.inputs.image }}:${{ github.event.inputs.tag_name }}|" \
+            "s|^\(\s*image:\s*\).*|\1${{ github.event.inputs.image }}:${{ github.event.inputs.tag_name }}|" \
             applications/example-application/deployment.yaml
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          commit-message: "Update to ${{ github.event.inputs.tag_name }}"
+          commit-message: "chore: deploy ${{ github.event.inputs.tag_name }}"
           branch: update-${{ github.event.inputs.tag_name }}
           title: "Deploy version ${{ github.event.inputs.tag_name }}"
           body: |
-            Automated update to version **${{ github.event.inputs.tag_name }}**.
+            Automated manifest update to **${{ github.event.inputs.tag_name }}**.
