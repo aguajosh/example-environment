@@ -25,7 +25,7 @@ jobs:
         run: |
           sed -i \
             "s|^\(\s*image:\s*\).*|\1${{ github.event.inputs.image }}:${{ github.event.inputs.tag_name }}|" \
-            applications/example-application/deployment.yaml
+            applications/example-application/rollout.yaml
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
